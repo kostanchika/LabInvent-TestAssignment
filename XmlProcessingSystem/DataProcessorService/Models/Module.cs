@@ -3,6 +3,6 @@ namespace DataProcessorService.Models;
 
 public sealed class Module
 {
-    public string ModuleCategoryId { get; set; }
+    public string ModuleCategoryId { get; set; } = null!;
     public ModuleState ModuleState { get; set; }
 }
