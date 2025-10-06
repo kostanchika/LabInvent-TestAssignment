@@ -11,6 +11,8 @@ cd XmlProcessingSystem
 docker compose up --build
 ```
 
+> Сервисы запустятся после запуска rabbitmq (healthcheck на уровне docker compose)
+
 ---
 
 ## Конфигурация

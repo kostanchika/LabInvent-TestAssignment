@@ -10,14 +10,12 @@ namespace XmlProcessingSystem.Shared.Services;
 public sealed class RabbitMQMessageBus : IMessageBus
 {
     private readonly ILogger<RabbitMQMessageBus> _logger;
-    private readonly IConnection _connection;
     private readonly IChannel _channel;
     private readonly string _queueName;
 
-    private RabbitMQMessageBus(ILogger<RabbitMQMessageBus> logger, IConnection connection, IChannel channel, string queueNmae)
+    private RabbitMQMessageBus(ILogger<RabbitMQMessageBus> logger, IChannel channel, string queueNmae)
     {
         _logger = logger;
-        _connection = connection;
         _channel = channel;
         _queueName = queueNmae;
     }
@@ -44,16 +42,19 @@ public sealed class RabbitMQMessageBus : IMessageBus
             arguments: null
         );
 
-        var bus = new RabbitMQMessageBus(logger, connection, channel, settings.QueueName);
-
-        await bus.CheckAvailabilityAsync();
+        var bus = new RabbitMQMessageBus(logger, channel, settings.QueueName);
 
         return bus;
-
     }
 
     public async Task PublishAsync(string message, CancellationToken cancellationToken = default)
     {
+        if (_channel == null || !_channel.IsOpen)
+        {
+            throw new InvalidOperationException("RabbitMQ channel is not open.");
+        }
+
+
         var body = Encoding.UTF8.GetBytes(message);
 
         await _channel.BasicPublishAsync("", _queueName, body, cancellationToken);
@@ -63,6 +64,11 @@ public sealed class RabbitMQMessageBus : IMessageBus
 
     public async Task SubscribeAsync(Func<string, Task> onMessage)
     {
+        if (_channel == null || !_channel.IsOpen)
+        {
+            throw new InvalidOperationException("RabbitMQ channel is not open.");
+        }
+
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
         consumer.ReceivedAsync += async (_, ea) =>
@@ -85,23 +91,5 @@ public sealed class RabbitMQMessageBus : IMessageBus
         };
 
         await _channel.BasicConsumeAsync(_queueName, false, consumer);
-    }
-
-    private async Task<bool> CheckAvailabilityAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var result = await _channel.QueueDeclarePassiveAsync(_queueName, cancellationToken);
-
-            _logger.LogInformation("RabbitMQ queue {Queue} is OK. Message count: {Count}", _queueName, result.MessageCount);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "RabbitMQ queue {Queue} is unavailable", _queueName);
-
-            throw;
-        }
     }
 }
