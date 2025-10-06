@@ -1,17 +1,30 @@
 services:
   dataprocessorservice:
     image: ${DOCKER_REGISTRY-}dataprocessorservice
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
+      DB_CONNECTION: ${DB_CONNECTION}
     build:
       context: .
       dockerfile: DataProcessorService/Dockerfile
 
   fileparserservice:
     image: ${DOCKER_REGISTRY-}fileparserservice
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
     build:
       context: .
       dockerfile: FileParserService/Dockerfile
     volumes:
-      - data:/home/data
+      - ./data:/home/data
 
   rabbitmq:
     image: rabbitmq:3-management
