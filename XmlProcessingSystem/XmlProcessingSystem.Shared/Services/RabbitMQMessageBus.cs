@@ -73,21 +73,14 @@ public sealed class RabbitMQMessageBus : IMessageBus
 
         consumer.ReceivedAsync += async (_, ea) =>
         {
-            try
-            {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
 
-                _logger.LogInformation("Received message from queue {Queue}", _queueName);
+            _logger.LogInformation("Received message from queue {Queue}", _queueName);
 
-                await onMessage(message);
+            await onMessage(message);
 
-                await _channel.BasicAckAsync(ea.DeliveryTag, false);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            await _channel.BasicAckAsync(ea.DeliveryTag, false);
         };
 
         await _channel.BasicConsumeAsync(_queueName, false, consumer);
